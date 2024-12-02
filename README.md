@@ -26,3 +26,9 @@ train.py: The main training script. This file configures the environment, sets u
 To train the model, run the following command:
 
 python train.py --env_name Missile
+
+You can specify the environment name (Missile) and other hyperparameters in the command line arguments：
+
+task = ["1", "2", "3"][1]
+
+###  Testing

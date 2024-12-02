@@ -119,7 +119,6 @@ class GAIL1(Module):
 
                 ob = ob.numpy()
 
-                # 添加条件判断，仅收集R大于等于2的数据
                 if R >= 1:
                     ep_obs.append(ob)
                     exp_obs.append(ob)
@@ -127,7 +126,6 @@ class GAIL1(Module):
 
                 ob, done = env.step(act)
 
-                # ep_rwds.append(rwd)
 
                 t += 1
 
@@ -141,16 +139,6 @@ class GAIL1(Module):
                 "Iterations_collection: {}"
                 .format(steps)
             )
-
-            # if done:
-            #     exp_rwd_iter.append(np.sum(ep_rwds))
-            ep_obs = FloatTensor(np.array(ep_obs))
-            # ep_rwds = FloatTensor(ep_rwds)
-
-        # exp_rwd_mean = np.mean(exp_rwd_iter)
-        # print(
-        #    "Expert Reward Mean: {}".format(exp_rwd_mean)
-        # )
 
         exp_obs = FloatTensor(np.array(exp_obs))
         exp_acts = FloatTensor(np.array(exp_acts))
@@ -270,8 +258,6 @@ class GAIL1(Module):
             nov_scores = self.d.get_logits(obs, acts)
             exp_scores_sum = exp_scores.sum().item()
             nov_scores_sum = nov_scores.sum().item()
-            print("exp_scores: {},   nov_scores: {}  "
-                  .format(exp_scores_sum, nov_scores_sum))
 
             opt_d.zero_grad()
             loss = torch.nn.functional.binary_cross_entropy_with_logits(

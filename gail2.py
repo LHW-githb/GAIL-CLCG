@@ -10,13 +10,11 @@ from funcs import get_flat_grads, get_flat_params, set_params, \
 import matplotlib.pyplot as plt
 
 from torch import FloatTensor
-##90°70s的任务
 def normalization(s):
     smax = np.array(
         [21213.20343559642, 426.3092218811059, 0.225686305842656, -0.141897054604164, 0.174532925199433, 21000])
     smin = np.array([29.313792923509720, 292.6769967324946, -1.561709693908308, -1.566251953977234, 0, 20000])
     snorm = 2 * (s - smin) / (smax - smin) - 1
-    # snorm = (s - smin) / (smax - smin)
     return snorm
 
 
@@ -24,40 +22,14 @@ def unnorm(snorm):
     smax = np.array([31.887927302595884])
     smin = np.array([3.561949136154314])
     s = (snorm.detach().numpy() + 1) * (smax - smin) / 2 + smin
-    # s = snorm.detach().numpy() * (smax - smin) + smin
     return s
 
 def unnorm_act(snorm):
     smax = np.array([31.887927302595884])
     smin = np.array([3.561949136154314])
     s = (snorm + 1) * (smax - smin) / 2 + smin
-    # s = snorm.detach().numpy() * (smax - smin) + smin
     return s
 
-##70du70s的归一化参数
-# def normalization(s):
-#     smax = np.array(
-#         [21213.20343559642, 437.8865595029926, 0.289093989679674, -0.141897054604164, 0.174532925199433, 21000])
-#     smin = np.array([17.100265832372138, 283.6740786494003, -1.219574880771625, -1.220652418139593, 0, 20000])
-#     snorm = 2 * (s - smin) / (smax - smin) - 1
-#     # snorm = (s - smin) / (smax - smin)
-#     return snorm
-#
-#
-# def unnorm(snorm):
-#     smax = np.array([33.349211993109440])
-#     smin = np.array([6.148644685711915])
-#     s = (snorm.detach().numpy() + 1) * (smax - smin) / 2 + smin
-#     # s = snorm.detach().numpy() * (smax - smin) + smin
-#     return s
-#
-# def unnorm_act(snorm):
-#     smax = np.array([33.349211993109440])
-#     smin = np.array([6.148644685711915])
-#     s = (snorm + 1) * (smax - smin) / 2 + smin
-#     # s = snorm.detach().numpy() * (smax - smin) + smin
-#     return s
-##70du70s的归一化参数
 
 
 def networkk(input_size,  output_size, num_tasks ,task_id):
@@ -105,7 +77,7 @@ class GAIL2(Module):
 
     def train(self, env,  expert, render=False):
         num_iters = 10000
-        num_steps_per_iter = 20
+        num_steps_per_iter = 50
         num_steps_per_iter1 = 1
         horizon = None
         lambda_ = 0.001
@@ -147,15 +119,12 @@ class GAIL2(Module):
 
                 ob = ob.numpy()
 
-                # 添加条件判断，仅收集R大于等于2的数据
                 if R >= 1:
                     ep_obs.append(ob)
                     exp_obs.append(ob)
                     exp_acts.append(act)
 
                 ob, done = env.step(act)
-
-                # ep_rwds.append(rwd)
 
                 t += 1
 
@@ -169,16 +138,6 @@ class GAIL2(Module):
                 "Iterations_collection: {}"
                 .format(steps)
             )
-
-            # if done:
-            #     exp_rwd_iter.append(np.sum(ep_rwds))
-            ep_obs = FloatTensor(np.array(ep_obs))
-            # ep_rwds = FloatTensor(ep_rwds)
-
-        # exp_rwd_mean = np.mean(exp_rwd_iter)
-        # print(
-        #    "Expert Reward Mean: {}".format(exp_rwd_mean)
-        # )
 
         exp_obs = FloatTensor(np.array(exp_obs))
         exp_acts = FloatTensor(np.array(exp_acts))
@@ -241,23 +200,7 @@ class GAIL2(Module):
                             done = True
                             break
                 steps += 1
-                #     pltx.append(env.state[1])
-                #     plty.append(env.state[2])
-                #     pltt.append(env.state[0])
-                #     pltac.append(act)
-                #
-                # ax1 = plt.subplot(1, 2, 1)
-                # ax2 = plt.subplot(1, 2, 2)
-                #
-                # plt.sca(ax1)
-                # plt.plot(pltx, plty, color='blue')
-                # plt.plot(env.xf, env.yf, color='red', marker='o')
-                #
-                # plt.sca(ax2)
-                # plt.plot(pltt, pltac, color='blue')
-                # plt.pause(1)
-                # plt.ioff()  # 关闭交互模式
-                # plt.show()
+
 
                 ep_obs = FloatTensor(np.array(ep_obs))
                 ep_acts = FloatTensor(np.array(ep_acts))
@@ -295,11 +238,6 @@ class GAIL2(Module):
 
                 gms.append(ep_gms)
 
-            # print(
-            #     "Iterations: {},   err_angle: {}  err_time: {} err_x: {} err_y: {}"
-            #     .format(i + 1, -90 - env1.state[4] / (math.pi / 180), 70 - env1.state[0], env1.xf - env1.state[1],
-            #             env1.yf - env1.state[2])
-            # )
             print(
                 "Iterations: {},    err_time: {} err_x: {} err_y: {}  reward: {}"
                 .format(i + 1,  70 - env.state[0], env.xf - env.state[1],

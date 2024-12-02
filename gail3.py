@@ -11,8 +11,6 @@ import matplotlib.pyplot as plt
 
 from torch import FloatTensor
 
-
-##70du70s的归一化参数
 def normalization(s):
     smax = np.array(
         [2.071834935510066e+04, 4.606040333749587e+02, 0.475257710133108, -0.145310010635702, 0.174532925199433, 20500])
@@ -33,9 +31,7 @@ def unnorm_act(snorm):
     smax = np.array([16.457259723994778])
     smin = np.array([0.380935527758852])
     s = (snorm + 1) * (smax - smin) / 2 + smin
-    # s = snorm.detach().numpy() * (smax - smin) + smin
     return s
-##70du70s的归一化参数
 
 
 def networkk(input_size,  output_size, num_tasks ,task_id):
@@ -46,7 +42,7 @@ def networkk(input_size,  output_size, num_tasks ,task_id):
         prog_net.addColumn()
     checkpoint = torch.load(
         './ckpts/best2.ckpt')
-    #checkpoint = torch.load('C:/Users/hhhhhhh/PycharmProjects/pythonProject/gail-pytorch-main (1)/gail-pytorch-main/pi_model_iter_pnn1_80_123.ckpt')
+
     prog_net.load_state_dict(checkpoint)
     prog_net.addColumn()
     prog_net.freezeAllColumns()
@@ -127,15 +123,12 @@ class GAIL3(Module):
 
                 ob = ob.numpy()
 
-                # 添加条件判断，仅收集R大于等于2的数据
                 if R >= 1:
                     ep_obs.append(ob)
                     exp_obs.append(ob)
                     exp_acts.append(act)
 
                 ob, done = env.step(act)
-
-                # ep_rwds.append(rwd)
 
                 t += 1
 
@@ -149,17 +142,6 @@ class GAIL3(Module):
                 "Iterations_collection: {}"
                 .format(steps)
             )
-
-            # if done:
-            #     exp_rwd_iter.append(np.sum(ep_rwds))
-            ep_obs = FloatTensor(np.array(ep_obs))
-            # ep_rwds = FloatTensor(ep_rwds)
-
-        # exp_rwd_mean = np.mean(exp_rwd_iter)
-        # print(
-        #    "Expert Reward Mean: {}".format(exp_rwd_mean)
-        # )
-
         exp_obs = FloatTensor(np.array(exp_obs))
         exp_acts = FloatTensor(np.array(exp_acts))
 
@@ -221,23 +203,6 @@ class GAIL3(Module):
                             done = True
                             break
                 steps += 1
-                #     pltx.append(env.state[1])
-                #     plty.append(env.state[2])
-                #     pltt.append(env.state[0])
-                #     pltac.append(act)
-                #
-                # ax1 = plt.subplot(1, 2, 1)
-                # ax2 = plt.subplot(1, 2, 2)
-                #
-                # plt.sca(ax1)
-                # plt.plot(pltx, plty, color='blue')
-                # plt.plot(env.xf, env.yf, color='red', marker='o')
-                #
-                # plt.sca(ax2)
-                # plt.plot(pltt, pltac, color='blue')
-                # plt.pause(1)
-                # plt.ioff()  # 关闭交互模式
-                # plt.show()
 
                 ep_obs = FloatTensor(np.array(ep_obs))
                 ep_acts = FloatTensor(np.array(ep_acts))
@@ -275,20 +240,15 @@ class GAIL3(Module):
 
                 gms.append(ep_gms)
 
-            # print(
-            #     "Iterations: {},   err_angle: {}  err_time: {} err_x: {} err_y: {}"
-            #     .format(i + 1, -90 - env1.state[4] / (math.pi / 180), 70 - env1.state[0], env1.xf - env1.state[1],
-            #             env1.yf - env1.state[2])
-            # )
             print(
                 "Iterations: {},   err_angle: {}  err_time: {} err_x: {} err_y: {}, reward: {}"
                 .format(
                     i + 1,
-                    -70 - env.state[4] / (math.pi / 180),  # 误差角度
-                    80 - env.state[0],  # 误差时间
-                    env.xf - env.state[1],  # 误差 x 坐标
-                    env.yf - env.state[2],  # 误差 y 坐标
-                    total_rewards/t  # 即时奖励（最后一个时间步的奖励）
+                    -70 - env.state[4] / (math.pi / 180),
+                    80 - env.state[0],
+                    env.xf - env.state[1],
+                    env.yf - env.state[2],
+                    total_rewards/t
                 )
             )
 

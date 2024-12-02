@@ -34,7 +34,7 @@ cydata0 = cydata0['cydata0']
 pi = 3.141592653589793
 RAD = 180 / pi
 
-task = [ "1","2", "3"][0]
+task = [ "1","2", "3"][1]
 
 if task == "1":
 
@@ -420,13 +420,11 @@ def simulate_missile_dnn( missile_dnn ,model_dnn, max_steps=10000000):
 
 from scipy.io import savemat
 
-# 初始化导弹对象
 missile = MISSILE()
 missile_dnn = MISSILE_dnn()
 errors = []
 errors_dnn = []
-#
-# # 运行模拟
+
 num_simulations=1
 for kkk in range(num_simulations):
     state_history, action_history,r_history,l_history,am_history = simulate_missile(missile,model)
@@ -434,35 +432,24 @@ for kkk in range(num_simulations):
 
     time_values, x_values, y_values, v_values,angle_values = zip(*[(state[0], state[1], state[2],state[3], state[4]) for state in state_history])
 
-    # Extract x and y values from state_history_dnn
     time_values_dnn, x_values_dnn, y_values_dnn,v_values_dnn, angle_values_dnn = zip(*[(state[0], state[1], state[2],state[3], state[4]) for state in state_history_dnn])
     action_history_squeezed = np.squeeze(action_history)
     action_history_squeezed_dnn = np.squeeze(action_history_dnn)
     am_history_dnn_squeezed = np.squeeze(am_history_dnn)
     am_history_squeezed = np.squeeze(am_history)
 
-    # action_history_ag, state_history_ag, am_history_ag = simulate_missile_ag(missile_ag)
-    # time_values_ag, x_values_ag, y_values_ag, v_values_ag, angle_values_ag = zip(
-    #     *[(state[0], state[1], state[2], state[3], state[4]) for state in state_history_ag])
-    # action_history_squeezed_ag = np.squeeze(action_history_ag)
-    # am_history_ag_squeezed = np.squeeze(am_history_ag)
-
     if task == "1":
         print(f"err_x {x_values[-1] - 20000}, err_y{y_values[-1] - 2000},err_angle{angle_values[-1] / pi * 180 + 80},v{v_values[-1]}")
         print(f"err_x_dnn {x_values_dnn[-1] - 20000}, err_y_dnn{y_values_dnn[-1] - 2000},err_angle_dnn{angle_values_dnn[-1] / pi * 180 + 80},v_dnn{v_values_dnn[-1]}")
-        # print(f"err_x_ag {x_values_ag[-1] - 20000}, err_y_ag{y_values_ag[-1] - 2000},err_angle_ag{angle_values_ag[-1] / pi * 180 + 80},v_ag{v_values_ag[-1]}")
     if task == "2":
         print(f"err_x {x_values[-1] - 20000}, err_y{y_values[-1] - 2000},err_t{time_values[-1] - 70},v{v_values[-1]}")
         print( f"err_x_dnn {x_values_dnn[-1] - 20000}, err_y_dnn{y_values_dnn[-1] - 2000},err_t_dnn{time_values_dnn[-1] - 70},v_dnn{v_values_dnn[-1]}")
-        # print(f"err_x_ag {x_values_ag[-1] - 20000}, err_y_ag{y_values_ag[-1] - 2000},err_t_ag{time_values_ag[-1] - 70},v_ag{v_values_ag[-1]}")
     if task == "3":
         print(f"err_x {x_values[-1] - 20000}, err_y{y_values[-1] - 2000},err_t{time_values[-1] -80},err_angle{angle_values[-1] / pi * 180 + 70},v{v_values[-1]}")
         print(f"err_x_dnn {x_values_dnn[-1] - 20000}, err_y_dnn{y_values_dnn[-1] - 2000},err_t_dnn{time_values_dnn[-1] - 80},err_angle_dnn{angle_values_dnn[-1] / pi * 180 + 70},v_dnn{v_values_dnn[-1]}")
-        # print(f"err_x_ag {x_values_ag[-1] - 20000}, err_y_ag{y_values_ag[-1] - 2000},err_t_ag{time_values_ag[-1] - 80},err_angle_ag{angle_values_ag[-1] / pi * 180 + 70},v_ag{v_values_ag[-1]}")
 
     plt.plot(x_values, y_values, label='Agent')
     plt.plot(x_values_dnn, y_values_dnn, label='Expert')
-    # plt.plot(x_values_ag, y_values_ag, label='Compare')
     plt.xlabel('X')
     plt.ylabel('Y')
     plt.title('Missile Path Comparison')
@@ -471,7 +458,6 @@ for kkk in range(num_simulations):
 
     plt.plot(time_values, am_history_squeezed, label='Agent')
     plt.plot(time_values_dnn, am_history_dnn_squeezed, label='Expert')
-    # plt.plot(time_values_ag, am_history_ag_squeezed, label='Compare')
     plt.xlabel('X')
     plt.ylabel('Y')
     plt.title('action')
@@ -480,7 +466,6 @@ for kkk in range(num_simulations):
 
     plt.plot(time_values, v_values, label='Agent')
     plt.plot(time_values_dnn, v_values_dnn, label='Expert')
-    # plt.plot(time_values_ag, v_values_ag, label='Compare')
     plt.xlabel('time')
     plt.ylabel('volcity')
     plt.title('volcity')
@@ -490,7 +475,6 @@ for kkk in range(num_simulations):
     plt.plot(time_values, [angle_value / 3.1415926 * 180 for angle_value in angle_values], label='Agent')
     plt.plot(time_values_dnn, [angle_value_dnn / 3.1415926 * 180 for angle_value_dnn in angle_values_dnn],
              label='Expert')
-    # plt.plot(time_values_ag, [angle_value_ag / 3.1415926 * 180 for angle_value_ag in angle_values_ag], label='Compare')
     plt.xlabel('time')
     plt.ylabel('angle')
     plt.title('Missile path')

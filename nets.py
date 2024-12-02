@@ -10,7 +10,6 @@ from torch import FloatTensor
 class My_Model(nn.Module):
     def __init__(self, input_dim):
         super(My_Model, self).__init__()
-        # TODO: modify model's structure, be aware of dimensions.
         self.layers = nn.Sequential(
             nn.Linear(input_dim, 32),
             nn.ReLU(),
@@ -24,7 +23,6 @@ class My_Model(nn.Module):
 
     def forward(self, x):
         x = self.layers(x)
-        #x = x.squeeze(1) # (B, 1) -> (B)
         return x
 
 class PolicyNetwork(Module):
@@ -150,25 +148,15 @@ class Expert(Module):
         return action
 
 class ProgBlock(nn.Module):
-    """
-    Runs the block on input x.
-    Returns output tensor or list of output tensors.
-    """
+
 
     def runBlock(self, x):
         raise NotImplementedError
-    """
-    Runs lateral i on input x.
-    Returns output tensor or list of output tensors.
-    """
+
 
     def runLateral(self, i, x):
         raise NotImplementedError
 
-    """
-    Runs activation of the block on x.
-    Returns output tensor or list of output tensors.
-    """
 
     def runActivation(self, x):
         raise NotImplementedError
@@ -210,10 +198,10 @@ class ProgColumn(nn.Module):
         self.log_std = Parameter(torch.zeros(1))
 
     def freeze(self, unfreeze = False):
-        if not unfreeze:    # Freeze params.
+        if not unfreeze:
             self.isFrozen = True
             for param in self.parameters():   param.requires_grad = False
-        else:               # Unfreeze params.
+        else:
             self.isFrozen = False
             for param in self.parameters():   param.requires_grad = True
 

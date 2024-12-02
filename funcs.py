@@ -10,23 +10,9 @@ def get_flat_grads(f, net):
 
     return flat_grads
 
-# def get_flat_gradspi(f, net):
-#     nett = net.columns[-1]
-#     flat_grads = torch.cat([
-#         grad.view(-1)
-#         for grad in torch.autograd.grad(f, nett.parameters(), create_graph=True)
-#     ])
-#     return flat_grads
-
-
 def get_flat_gradspi(f, net):
-    # 初始化梯度为零
     net.zero_grad()
-
-    # 计算梯度
     f.backward(create_graph=True)
-
-    # 将梯度展平并连接
     flat_grads = torch.cat([
         param.grad.view(-1) if param.grad is not None else torch.zeros_like(param).view(-1)
         for param in net.columns[-1].parameters()
@@ -113,7 +99,6 @@ def rescale_and_linesearch(
 
         beta *= 0.5
 
-    print("The line search was failed!")
     return old_params
 
 def rescale_and_linesearchpi(
@@ -144,5 +129,4 @@ def rescale_and_linesearchpi(
 
         beta *= 0.5
 
-    print("The line search was failed!")
     return old_params

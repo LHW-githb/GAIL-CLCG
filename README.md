@@ -4,4 +4,6 @@ This repository contains code for training reinforcement learning models using G
 The objective is to train a policy model that can control a missile’s flight dynamics based on expert demonstrations. This is done by using GAIL, which combines imitation learning and adversarial training to match the policy to the expert’s behavior.
 
 ## Project Structure
-Trian
+The repository consists of the following key files:
+funcs.py: Utility functions for mathematical operations, state transitions, and other tasks necessary for the missile environment simulation.
+

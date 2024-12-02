@@ -32,3 +32,13 @@ You can specify the environment name (Missile) and other hyperparameters in the 
 task = ["1", "2", "3"][1]
 
 ###  Testing
+
+To test a trained model, run the following command:
+
+python test.py --env_name Missile --model_path ./path_to_trained_model
+
+(Models that have been trained are stored in . /ckpts/, the model corresponding to scenario 1 is best1.ckpt, the model corresponding to scenario 2 is best2.ckpt, and the model corresponding to scenario 3 is best3.ckpt.)
+
+You can decide which guidance scenario to test by selecting the options in task.：
+
+task = ["1", "2", "3"][1]

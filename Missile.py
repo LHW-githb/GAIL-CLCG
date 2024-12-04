@@ -45,7 +45,7 @@ class MISSILE():
     def modify(self, state=None, ad=None):
         if state is None:
             state = [0., 0, 5000, 300, (math.pi / 180) * uniform(0, 10), 400]
-        self.xf =  uniform(20000, 20500)
+        self.xf =  uniform(20000, 20000)
         self.fpa0 = state[4]
         self.state = np.array(state)
         self.done = False
@@ -53,8 +53,8 @@ class MISSILE():
 
     def step(self, action):
         Rr = sqrt((self.state[1] - self.xf) ** 2 + (self.state[2] - self.yf) ** 2)
-        if Rr>400:
-            Inth = 0.05
+        if Rr>100:
+            Inth = 0.1
         else:
             Inth = 0.002
 

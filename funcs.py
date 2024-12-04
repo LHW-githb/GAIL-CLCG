@@ -10,15 +10,23 @@ def get_flat_grads(f, net):
 
     return flat_grads
 
+
 def get_flat_gradspi(f, net):
+    if not f.requires_grad:
+        f = f.requires_grad_()
     net.zero_grad()
     f.backward(create_graph=True)
     flat_grads = torch.cat([
         param.grad.view(-1) if param.grad is not None else torch.zeros_like(param).view(-1)
         for param in net.columns[-1].parameters()
     ])
+    for param in net.columns[-1].parameters():
+        if not param.requires_grad:
+            param.requires_grad = True
 
     return flat_grads
+
+
 def get_flat_params(net):
     return torch.cat([param.view(-1) for param in net.parameters()])
 

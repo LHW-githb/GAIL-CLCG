@@ -45,6 +45,19 @@ def networkk(input_size,  output_size, num_tasks ,task_id):
     prog_net.unfreezeColumn(task_id)
     return prog_net
 
+def networkk_v(input_size,  output_size, num_tasks ,task_id):
+    col_gen = SimpleColumnGenerator(input_size, 50, output_size, num_tasks)
+    prog_net = ProgNet(col_gen)
+    num_tasks = 1
+    for _ in range(num_tasks):
+        prog_net.addColumn()
+    checkpoint = torch.load('./ckpts/task1_value_[30].ckpt')
+    prog_net.load_state_dict(checkpoint)
+    prog_net.addColumn()
+    prog_net.freezeAllColumns()
+    prog_net.unfreezeColumn(task_id)
+    return prog_net
+
 class GAIL2(Module):
     def __init__(
         self,
@@ -61,7 +74,7 @@ class GAIL2(Module):
         self.train_config = train_config
 
         self.pi = networkk(self.state_dim, self.action_dim, 1,1)
-        self.v = ValueNetwork(self.state_dim)
+        self.v = networkk_v(self.state_dim, 1, 1, 1)
 
         self.d = Discriminator(self.state_dim, self.action_dim, self.discrete)
 
@@ -75,9 +88,9 @@ class GAIL2(Module):
         action = distb.sample().detach().cpu().numpy()
         return action
 
-    def train(self, env,  expert, render=False):
+    def train(self, env, expert, render=False):
         num_iters = 10000
-        num_steps_per_iter = 50
+        num_steps_per_iter =40
         num_steps_per_iter1 = 1
         horizon = None
         lambda_ = 0.001
@@ -125,6 +138,7 @@ class GAIL2(Module):
                     exp_acts.append(act)
 
                 ob, done = env.step(act)
+
 
                 t += 1
 
@@ -201,7 +215,6 @@ class GAIL2(Module):
                             break
                 steps += 1
 
-
                 ep_obs = FloatTensor(np.array(ep_obs))
                 ep_acts = FloatTensor(np.array(ep_acts))
                 ep_rwds = FloatTensor(ep_rwds)
@@ -221,9 +234,9 @@ class GAIL2(Module):
                 rets.append(ep_rets)
 
                 self.v.eval()
-                curr_vals = self.v(ep_obs).detach()
+                curr_vals = self.v(self.task_id,ep_obs).mean.detach()
                 next_vals = torch.cat(
-                    (self.v(ep_obs)[1:], FloatTensor([[0.]]))
+                    (self.v(self.task_id,ep_obs).mean[1:], FloatTensor([[0.]]))
                 ).detach()
                 ep_deltas = ep_costs.unsqueeze(-1) \
                             + gae_gamma * next_vals \
@@ -258,8 +271,6 @@ class GAIL2(Module):
             nov_scores = self.d.get_logits(obs, acts)
             exp_scores_sum = exp_scores.sum().item()
             nov_scores_sum = nov_scores.sum().item()
-            print("exp_scores: {},   nov_scores: {}  "
-                  .format(self.d.forward(exp_obs, exp_acts).mean().item(), self.d.forward(obs, acts).mean().item()))
 
             opt_d.zero_grad()
             loss = torch.nn.functional.binary_cross_entropy_with_logits(
@@ -273,22 +284,21 @@ class GAIL2(Module):
             opt_d.step()
 
             self.v.train()
-            old_params = get_flat_params(self.v).detach()
-            old_v = self.v(obs).detach()
-
+            old_params = get_flat_params(self.v.columns[-1]).detach()
+            old_v = self.v(self.task_id,obs).mean.detach()
             def constraint():
-                return ((old_v - self.v(obs)) ** 2).mean()
+                return ((old_v - self.v(self.task_id,obs).mean) ** 2).mean()
 
-            grad_diff = get_flat_grads(constraint(), self.v)
+            grad_diff = get_flat_gradspi(constraint(), self.v)
 
             def Hv(v):
-                hessian = get_flat_grads(torch.dot(grad_diff, v), self.v) \
+                hessian = get_flat_gradspi(torch.dot(grad_diff, v), self.v) \
                     .detach()
 
                 return hessian
 
-            g = get_flat_grads(
-                ((-1) * (self.v(obs).squeeze() - rets) ** 2).mean(), self.v
+            g = get_flat_gradspi(
+                ((-1) * (self.v(self.task_id,obs).mean.squeeze() - rets) ** 2).mean(), self.v
             ).detach()
             s = conjugate_gradient(Hv, g).detach()
 
@@ -297,7 +307,7 @@ class GAIL2(Module):
 
             new_params = old_params + alpha * s
 
-            set_params(self.v, new_params)
+            set_paramspi(self.v, new_params)
 
             self.pi.train()
             old_params = get_flat_params(self.pi.columns[-1]).detach()
@@ -366,7 +376,11 @@ class GAIL2(Module):
 
             if hasattr(self, "pi"):
                 torch.save(
-                    self.pi.state_dict(), f"pi_model_iter_90du_70s_1_{i}.ckpt"
+                    self.pi.state_dict(), f"task2_[{i}].ckpt"
+                )
+            if hasattr(self, "v"):
+                torch.save(
+                    self.pi.state_dict(), f"task2_value_[{i}].ckpt"
                 )
 
         return exp_rwd_mean, rwd_iter_means

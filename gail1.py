@@ -59,7 +59,7 @@ class GAIL1(Module):
         self.train_config = train_config
 
         self.pi = networkk(self.state_dim, self.action_dim, 1,0)
-        self.v = ValueNetwork(self.state_dim)
+        self.v = networkk(self.state_dim, 1, 1, 0)
 
         self.d = Discriminator(self.state_dim, self.action_dim, self.discrete)
 
@@ -70,9 +70,7 @@ class GAIL1(Module):
         self.pi.eval()
         state = FloatTensor(state)
         distb = self.pi.forward(self.task_id, state)
-
         action = distb.sample().detach().cpu().numpy()
-
         return action
 
     def train(self, env, expert, render=False):
@@ -221,9 +219,9 @@ class GAIL1(Module):
                 rets.append(ep_rets)
 
                 self.v.eval()
-                curr_vals = self.v(ep_obs).detach()
+                curr_vals = self.v(self.task_id,ep_obs).mean.detach()
                 next_vals = torch.cat(
-                    (self.v(ep_obs)[1:], FloatTensor([[0.]]))
+                    (self.v(self.task_id,ep_obs).mean[1:], FloatTensor([[0.]]))
                 ).detach()
                 ep_deltas = ep_costs.unsqueeze(-1) \
                             + gae_gamma * next_vals \
@@ -272,21 +270,20 @@ class GAIL1(Module):
 
             self.v.train()
             old_params = get_flat_params(self.v).detach()
-            old_v = self.v(obs).detach()
-
+            old_v = self.v(self.task_id,obs).mean.detach()
             def constraint():
-                return ((old_v - self.v(obs)) ** 2).mean()
+                return ((old_v - self.v(self.task_id,obs).mean) ** 2).mean()
 
-            grad_diff = get_flat_grads(constraint(), self.v)
+            grad_diff = get_flat_gradspi(constraint(), self.v)
 
             def Hv(v):
-                hessian = get_flat_grads(torch.dot(grad_diff, v), self.v) \
+                hessian = get_flat_gradspi(torch.dot(grad_diff, v), self.v) \
                     .detach()
 
                 return hessian
 
-            g = get_flat_grads(
-                ((-1) * (self.v(obs).squeeze() - rets) ** 2).mean(), self.v
+            g = get_flat_gradspi(
+                ((-1) * (self.v(self.task_id,obs).mean.squeeze() - rets) ** 2).mean(), self.v
             ).detach()
             s = conjugate_gradient(Hv, g).detach()
 
@@ -365,6 +362,11 @@ class GAIL1(Module):
             if hasattr(self, "pi"):
                 torch.save(
                     self.pi.state_dict(), f"task1_[{i}].ckpt"
+                )
+
+            if hasattr(self, "v"):
+                torch.save(
+                    self.pi.state_dict(), f"task1_value_[{i}].ckpt"
                 )
 
         return exp_rwd_mean, rwd_iter_means

@@ -27,7 +27,7 @@ from gail3 import GAIL3
 from Missile import MISSILE
 
 
-task = ["1", "2", "3"][1]
+task = ["1", "2", "3"][2]
 
 
 def main(env_name):

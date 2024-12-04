@@ -223,7 +223,11 @@ class ProgColumn(nn.Module):
         mean = outputs[-1]
         std = torch.exp(self.log_std)
         cov_mtx = torch.eye(1) * (std ** 2)
-
+        cov_mtx = torch.maximum(cov_mtx, torch.tensor(1e-6))
+        if torch.isnan(mean).any():
+            mean = torch.ones_like(mean)
+        if torch.isnan(cov_mtx).any():
+            cov_mtx = torch.ones_like(cov_mtx)
         distb = MultivariateNormal(mean, cov_mtx)
 
         return distb

@@ -34,7 +34,7 @@ cydata0 = cydata0['cydata0']
 pi = 3.141592653589793
 RAD = 180 / pi
 
-task = [ "1","2", "3"][1]
+task = [ "1","2", "3"][2]
 
 if task == "1":
 

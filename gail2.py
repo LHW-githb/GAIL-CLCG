@@ -90,7 +90,7 @@ class GAIL2(Module):
 
     def train(self, env, expert, render=False):
         num_iters = 10000
-        num_steps_per_iter =40
+        num_steps_per_iter =100
         num_steps_per_iter1 = 1
         horizon = None
         lambda_ = 0.001
@@ -107,7 +107,6 @@ class GAIL2(Module):
 
         exp_obs = []
         exp_acts = []
-        total_rewards = 0.0
         steps = 0
         while steps < num_steps_per_iter:
             ep_obs = []
@@ -171,8 +170,6 @@ class GAIL2(Module):
                 ep_obs = []
                 ep_acts = []
                 ep_rwds = []
-                ep_costs = []
-                ep_disc_costs = []
                 ep_gms = []
                 ep_lmbs = []
 
@@ -225,7 +222,6 @@ class GAIL2(Module):
                 ep_costs = (-1) * torch.log(self.d(ep_obs, ep_acts)) \
                     .squeeze().detach()
                 ep_disc_costs = ep_gms * ep_costs
-                total_rewards += ep_costs.sum().item()
                 ep_disc_rets = FloatTensor(
                     [sum(ep_disc_costs[i:]) for i in range(t)]
                 )
@@ -252,9 +248,9 @@ class GAIL2(Module):
                 gms.append(ep_gms)
 
             print(
-                "Iterations: {},    err_time: {} err_x: {} err_y: {}  reward: {}"
+                "Iterations: {},    err_time: {} err_x: {} err_y: {} "
                 .format(i + 1,  70 - env.state[0], env.xf - env.state[1],
-                        env.yf - env.state[2],total_rewards/t)
+                        env.yf - env.state[2])
             )
 
             obs = FloatTensor(np.array(obs))

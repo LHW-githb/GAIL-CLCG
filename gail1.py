@@ -201,8 +201,6 @@ class GAIL1(Module):
 
                 ep_obs = FloatTensor(np.array(ep_obs))
                 ep_acts = FloatTensor(np.array(ep_acts))
-                ep_rwds = FloatTensor(ep_rwds)
-                # ep_disc_rwds = FloatTensor(ep_disc_rwds)
                 ep_gms = FloatTensor(ep_gms)
                 ep_lmbs = FloatTensor(ep_lmbs)
 
@@ -235,7 +233,7 @@ class GAIL1(Module):
                 gms.append(ep_gms)
 
             print(
-                "Iterations: {},   err_angle: {}   err_x: {} err_y: {} "
+                "Iterations: {},   err_angle: {}   err_x: {} err_y: {}"
                 .format(i + 1, -80 - env.state[4] / (math.pi / 180),  env.xf - env.state[1],
                         env.yf - env.state[2])
             )

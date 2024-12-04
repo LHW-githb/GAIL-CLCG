@@ -111,7 +111,6 @@ class GAIL3(Module):
 
         exp_obs = []
         exp_acts = []
-        total_rewards = 0.0
         steps = 0
         while steps < num_steps_per_iter:
             ep_obs = []
@@ -229,7 +228,6 @@ class GAIL3(Module):
                 ep_costs = (-1) * torch.log(self.d(ep_obs, ep_acts)) \
                     .squeeze().detach()
                 ep_disc_costs = ep_gms * ep_costs
-                total_rewards += ep_costs.sum().item()
                 ep_disc_rets = FloatTensor(
                     [sum(ep_disc_costs[i:]) for i in range(t)]
                 )
@@ -256,14 +254,13 @@ class GAIL3(Module):
                 gms.append(ep_gms)
 
             print(
-                "Iterations: {},   err_angle: {}  err_time: {} err_x: {} err_y: {}, reward: {}"
+                "Iterations: {},   err_angle: {}  err_time: {} err_x: {} err_y: {}"
                 .format(
                     i + 1,
                     -70 - env.state[4] / (math.pi / 180),
                     80 - env.state[0],
                     env.xf - env.state[1],
                     env.yf - env.state[2],
-                    total_rewards/t
                 )
             )
 

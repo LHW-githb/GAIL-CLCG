@@ -55,7 +55,7 @@ def networkk_v(input_size,  output_size, num_tasks ,task_id):
     num_tasks = 2
     for _ in range(num_tasks):
         prog_net.addColumn()
-    checkpoint = torch.load('./ckpts/task2_value_[29].ckpt')
+    checkpoint = torch.load('./ckpts/value_2.ckpt')
     prog_net.load_state_dict(checkpoint)
     prog_net.addColumn()
     prog_net.freezeAllColumns()

@@ -147,39 +147,47 @@ class Expert(Module):
 
         return action
 
-
-import torch
-import torch.nn as nn
-from torch.nn import Parameter
-from torch.distributions import MultivariateNormal
-
-
 class ProgBlock(nn.Module):
+
+
     def runBlock(self, x):
         raise NotImplementedError
+
+
+    def runLateral(self, i, x):
+        raise NotImplementedError
+
 
     def runActivation(self, x):
         raise NotImplementedError
 
 
 class ProgDenseBNBlock(ProgBlock):
-    def __init__(self, inSize, outSize, activation=nn.Tanh()):
+    def __init__(self, inSize, outSize, numLaterals, activation=nn.Tanh()):
         super().__init__()
+        self.numLaterals = numLaterals
+        self.inSize = inSize
+        self.outSize = outSize
         self.module = nn.Linear(inSize, outSize)
+        self.laterals = nn.ModuleList([nn.Linear(inSize, outSize) for _ in range(numLaterals)])
         if activation is None:
-            self.activation = lambda x: x
+            self.activation = (lambda x: x)
         else:
             self.activation = activation
 
     def runBlock(self, x):
         return self.module(x)
 
+    def runLateral(self, i, x):
+        lat = self.laterals[i]
+        return lat(x)
+
     def runActivation(self, x):
         return self.activation(x)
 
 
 class ProgColumn(nn.Module):
-    def __init__(self, colID, blockList, parentCols=[]):
+    def __init__(self, colID, blockList, parentCols = []):
         super().__init__()
         self.colID = colID
         self.isFrozen = False
@@ -189,60 +197,48 @@ class ProgColumn(nn.Module):
         self.lastOutputList = []
         self.log_std = Parameter(torch.zeros(1))
 
-        # Initialize gates for each parent column
-        self.gates = nn.Parameter(torch.ones(len(parentCols)))
-
-    def freeze(self, unfreeze=False):
+    def freeze(self, unfreeze = False):
         if not unfreeze:
             self.isFrozen = True
-            for param in self.parameters():
-                param.requires_grad = False
+            for param in self.parameters():   param.requires_grad = False
         else:
             self.isFrozen = False
-            for param in self.parameters():
-                param.requires_grad = True
+            for param in self.parameters():   param.requires_grad = True
 
     def forward(self, input):
-        # Aggregate gated lateral connections from parent columns
-        if self.parentCols:
-            gated_laterals = 0
-            gates = torch.sigmoid(self.gates)  # Gates between 0 and 1
-            for gate, parent in zip(gates, self.parentCols):
-                # Ensure the parent has outputs
-                if parent.lastOutputList:
-                    parent_output = parent.lastOutputList[-1]
-                    gated_laterals += gate * parent_output
-            x = input + gated_laterals
-        else:
-            x = input
-
         outputs = []
-        for block in self.blocks:
+        x = input
+        for row, block in enumerate(self.blocks):
             currOutput = block.runBlock(x)
-            y = block.runActivation(currOutput)
+            if row == 0 or len(self.parentCols) < 1:
+                y = block.runActivation(currOutput)
+            else:
+                for c, col in enumerate(self.parentCols):
+                    currOutput += block.runLateral(c, col.lastOutputList[row - 1])
+                y = block.runActivation(currOutput)
             outputs.append(y)
-            x = y  # Feed the output of the current block as input to the next block
-
+            x = y
         self.lastOutputList = outputs
 
         mean = outputs[-1]
         std = torch.exp(self.log_std)
-        cov_mtx = torch.eye(mean.size(-1)) * (std ** 2)
-        cov_mtx = torch.maximum(cov_mtx, torch.tensor(1e-6, device=mean.device))
-
-        # Handle NaNs
+        cov_mtx = torch.eye(1) * (std ** 2)
+        cov_mtx = torch.maximum(cov_mtx, torch.tensor(1e-6))
         if torch.isnan(mean).any():
             mean = torch.ones_like(mean)
         if torch.isnan(cov_mtx).any():
             cov_mtx = torch.ones_like(cov_mtx)
-
         distb = MultivariateNormal(mean, cov_mtx)
 
         return distb
 
 
+
+
+
+
 class ProgNet(nn.Module):
-    def __init__(self, colGen=None):
+    def __init__(self, colGen = None):
         super().__init__()
         self.columns = nn.ModuleList()
         self.numRows = None
@@ -251,9 +247,9 @@ class ProgNet(nn.Module):
         self.colGen = colGen
         self.colShape = None
 
-    def addColumn(self, col=None, msg=None):
+    def addColumn(self, col = None, msg = None):
         if not col:
-            parents = list(self.columns)
+            parents = [colRef for colRef in self.columns]
             col = self.colGen.generateColumn(parents, msg)
         self.columns.append(col)
         self.colMap[col.colID] = self.numCols
@@ -271,11 +267,11 @@ class ProgNet(nn.Module):
 
     def unfreezeColumn(self, id):
         col = self.columns[self.colMap[id]]
-        col.freeze(unfreeze=True)
+        col.freeze(unfreeze = True)
 
     def unfreezeAllColumns(self):
         for col in self.columns:
-            col.freeze(unfreeze=True)
+            col.freeze(unfreeze = True)
 
     def getColumn(self, id):
         col = self.columns[self.colMap[id]]
@@ -298,10 +294,9 @@ class SimpleColumnGenerator:
 
     def generateColumn(self, parentCols, msg):
         colID = len(parentCols)
-        block1 = ProgDenseBNBlock(self.input_size, self.hidden_size, activation=nn.Tanh())
-        block2 = ProgDenseBNBlock(self.hidden_size, self.hidden_size, activation=nn.Tanh())
-        block3 = ProgDenseBNBlock(self.hidden_size, self.hidden_size, activation=nn.Tanh())
-        block4 = ProgDenseBNBlock(self.hidden_size, self.output_size, activation=nn.Tanh())
-        column = ProgColumn(colID, [block1, block2, block3, block4], parentCols)
+        block1 = ProgDenseBNBlock(self.input_size, self.hidden_size, len(parentCols), activation=nn.Tanh())
+        block2 = ProgDenseBNBlock(self.hidden_size, self.hidden_size, len(parentCols), activation=nn.Tanh())
+        block3 = ProgDenseBNBlock(self.hidden_size, self.hidden_size, len(parentCols), activation=nn.Tanh())
+        block4 = ProgDenseBNBlock(self.hidden_size, self.output_size, len(parentCols), activation=nn.Tanh())
+        column = ProgColumn(colID, [block1, block2,block3,block4], parentCols)
         return column
-

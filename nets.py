@@ -203,10 +203,9 @@ class ProgColumn(nn.Module):
                 param.requires_grad = True
 
     def forward(self, input):
-        # Aggregate gated lateral connections from parent columns
         if self.parentCols:
             gated_laterals = 0
-            gates = torch.sigmoid(self.gates)  # Gates between 0 and 1
+            gates = torch.sigmoid(self.gates) 
             for gate, parent in zip(gates, self.parentCols):
                 # Ensure the parent has outputs
                 if parent.lastOutputList:

@@ -376,7 +376,7 @@ class GAIL2(Module):
                 )
             if hasattr(self, "v"):
                 torch.save(
-                    self.pi.state_dict(), f"task2_value_[{i}].ckpt"
+                    self.v.state_dict(), f"task2_value_[{i}].ckpt"
                 )
 
         return exp_rwd_mean, rwd_iter_means
